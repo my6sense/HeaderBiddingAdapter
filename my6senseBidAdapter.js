@@ -6,7 +6,7 @@ const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
 const END_POINT_METHOD = 'POST';
 
 function isBidRequestValid(bid) {
-  return !(bid.bidder !== BIDDER_CODE || !bid.params || !bid.params.widgetKey);
+  return !(bid.bidder !== BIDDER_CODE || !bid.params || !bid.params.key);
 }
 
 
@@ -21,7 +21,7 @@ function buildRequests(validBidRequests) {
       bidRequest.widget_num = 1; // mandatory property for server side
 
       requests.push({
-        url: `${END_POINT}?widget_key=${bidRequest.params.widgetKey}`, // mandatory query string for server side
+        url: `${END_POINT}?widget_key=${bidRequest.params.key}`, // mandatory query string for server side
         method: END_POINT_METHOD,
         data: JSON.stringify(bidRequest)
       });
