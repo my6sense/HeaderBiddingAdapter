@@ -8,12 +8,119 @@ function isBidRequestValid(bid) {
   return !(bid.bidder !== BIDDER_CODE || !bid.params || !bid.params.key);
 }
 
+function getUrl(url) {
+  if (!url) {
+    url = window.location.href;// "clean" url of current web page
+  }
+  var canonicalLink = null;
+  // first look for meta data with property "og:url"
+  var metaElements = document.getElementsByTagName('meta');
+  for (var i = 0; i < metaElements.length && !canonicalLink; i++) {
+    if (metaElements[i].getAttribute('property') == 'og:url') {
+      canonicalLink = metaElements[i].content;
+    }
+  }
+  if (!canonicalLink) {
+    var canonicalLinkContainer = document.querySelector("link[rel='canonical']");// html element containing the canonical link
+    if (canonicalLinkContainer) {
+      // get clean url from href of <link rel='canocial' .../>
+      canonicalLink = canonicalLinkContainer.href;
+    }
+  }
+  url = canonicalLink || url;
+  return encodeURIComponent(url).toString();
+}
+
+/**
+ * this function is used to fix param value before sending them to server, if user did not set it,
+ * default value for parameter will be returned
+ * example1: paidClicks: '[PAID_TRACKING_PIXEL]', will return {value: '', fromUser: false}
+ * example2: pageURL: 'www.my6sense.com', will return {value: 'www.my6sense.com', fromUser: true}
+ * @param key
+ * @param value
+ * @returns {{value: *, fromUser: boolean}}
+ */
+function fixRequestParamForServer(key, value) {
+  function isEmptyValue(key, value) {
+    return value === parametersMap[key].emptyValue;
+  }
+
+  const parametersMap = {
+    'pageUrl': {
+      emptyValue: '[PAGE_URL]',
+      defaultValue: getUrl()
+    },
+    'displayWithinIframe': {
+      emptyValue: '',
+      defaultValue: ''
+    },
+    'dataParams': {
+      emptyValue: '[KEY_VALUES]',
+      defaultValue: ''
+    },
+    'paidClicks': {
+      emptyValue: '[PAID_TRACKING_PIXEL]',
+      defaultValue: ''
+    },
+    'organicClicks': {
+      emptyValue: '[ORGANIC_TRACKING_PIXEL]',
+      defaultValue: ''
+    },
+    'dataView': {
+      emptyValue: '[VIEW_TRACKING_PIXEL]',
+      defaultValue: ''
+    },
+    // ZONE is not part of this object, handled on server side
+  };
+
+  // if param is not in list we do not change it (return it as is)
+  if (!parametersMap.hasOwnProperty(key)) {
+    return {
+      value: value,
+      fromUser: true
+    };
+  }
+
+  // if no value given by user set it to default
+  if (!value || isEmptyValue(key, value)) {
+    return {
+      value: parametersMap[key].defaultValue,
+      fromUser: false
+    };
+  }
+
+  return {
+    value: value,
+    fromUser: true
+  };
+}
+
 function buildRequests(validBidRequests) {
   let requests = [];
 
   if (validBidRequests && validBidRequests.length) {
     validBidRequests.forEach(bidRequest => {
       bidRequest.widget_num = 1; // mandatory property for server side
+
+      if (bidRequest.params) {
+        for (let key in bidRequest.params) {
+          // loop over params and remove empty/untouched values
+          if (bidRequest.params.hasOwnProperty(key)) {
+            let fixedObj = fixRequestParamForServer(key, bidRequest.params[key]);
+            bidRequest.params[key] = fixedObj.value;
+
+            // if pageUrl is set by user we should add this as a param to request
+            if (key === 'pageUrl' && fixedObj.fromUser === true) {
+              bidRequest.params.is_data_url_set = true;
+            }
+
+            // remove empty params from request
+            if (!bidRequest.params[key]) {
+              delete bidRequest.params[key];
+            }
+          }
+        }
+      }
 
       requests.push({
         url: `${END_POINT}?widget_key=${bidRequest.params.key}`, // mandatory query string for server side
@@ -32,7 +139,7 @@ function interpretResponse(serverResponse) {
   // currently server returns a single response which is the body property
   if (serverResponse.body) {
     serverResponse.body.bidderCode = BIDDER_CODE;
-    // serverResponse.body.cpm = 7;
+    // serverResponse.body.cpm = 70;
     bidResponses.push(serverResponse.body);
   }
 
