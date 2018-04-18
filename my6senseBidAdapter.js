@@ -101,6 +101,7 @@ function buildRequests(validBidRequests) {
   if (validBidRequests && validBidRequests.length) {
     validBidRequests.forEach(bidRequest => {
       bidRequest.widget_num = 1; // mandatory property for server side
+      let isDataUrlSetByUser = false;
 
       if (bidRequest.params) {
         for (let key in bidRequest.params) {
@@ -109,9 +110,9 @@ function buildRequests(validBidRequests) {
             let fixedObj = fixRequestParamForServer(key, bidRequest.params[key]);
             bidRequest.params[key] = fixedObj.value;
 
-            // if pageUrl is set by user we should add this as a param to request
+            // if pageUrl is set by user we should update variable for query string param
             if (key === 'pageUrl' && fixedObj.fromUser === true) {
-              bidRequest.params.is_data_url_set = true;
+              isDataUrlSetByUser = true;
             }
 
             // remove empty params from request
@@ -123,7 +124,8 @@ function buildRequests(validBidRequests) {
       }
 
       requests.push({
-        url: `${END_POINT}?widget_key=${bidRequest.params.key}`, // mandatory query string for server side
+        url: `${END_POINT}?widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`, // mandatory query string for server side
+        // url: `${END_POINT}?env=debug&widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`, // this url is used for debugging only
         method: END_POINT_METHOD,
         data: JSON.stringify(bidRequest)
       });
