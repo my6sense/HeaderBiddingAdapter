@@ -102,11 +102,19 @@ function buildRequests(validBidRequests) {
     validBidRequests.forEach(bidRequest => {
       bidRequest.widget_num = 1; // mandatory property for server side
       let isDataUrlSetByUser = false;
+      let debug = false;
 
       if (bidRequest.params) {
         for (let key in bidRequest.params) {
           // loop over params and remove empty/untouched values
           if (bidRequest.params.hasOwnProperty(key)) {
+            // if debug we update url string to get core debug version
+            if (key === 'debug' && bidRequest.params[key] === true) {
+              debug = true;
+              delete bidRequest.params[key];
+              continue;
+            }
+
             let fixedObj = fixRequestParamForServer(key, bidRequest.params[key]);
             bidRequest.params[key] = fixedObj.value;
 
@@ -123,9 +131,13 @@ function buildRequests(validBidRequests) {
         }
       }
 
+      let url = `${END_POINT}?widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`; // mandatory query string for server side
+      if (debug) {
+        url = `${END_POINT}?env=debug&widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`; // this url is for debugging
+      }
+
       requests.push({
-        url: `${END_POINT}?widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`, // mandatory query string for server side
-        // url: `${END_POINT}?env=debug&widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`, // this url is used for debugging only
+        url: url,
         method: END_POINT_METHOD,
         data: JSON.stringify(bidRequest)
       });
@@ -141,7 +153,6 @@ function interpretResponse(serverResponse) {
   // currently server returns a single response which is the body property
   if (serverResponse.body) {
     serverResponse.body.bidderCode = BIDDER_CODE;
-    // serverResponse.body.cpm = 70;
     bidResponses.push(serverResponse.body);
   }
 
