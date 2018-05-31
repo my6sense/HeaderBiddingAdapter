@@ -1,9 +1,11 @@
 const {registerBidder} = require('../src/adapters/bidderFactory');
 
 const BIDDER_CODE = 'my6sense';
-const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
+// const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
+const END_POINT = 'http://127.0.0.1:8080/pub2/web/hbwidget.json';
 const END_POINT_METHOD = 'POST';
 
+// called firstssss
 function isBidRequestValid(bid) {
   return !(bid.bidder !== BIDDER_CODE || !bid.params || !bid.params.key);
 }
@@ -95,6 +97,8 @@ function fixRequestParamForServer(key, value) {
   };
 }
 
+// called second
+
 function buildRequests(validBidRequests) {
   let requests = [];
 
@@ -146,6 +150,8 @@ function buildRequests(validBidRequests) {
 
   return requests;
 }
+
+// called third
 
 function interpretResponse(serverResponse) {
   const bidResponses = [];
