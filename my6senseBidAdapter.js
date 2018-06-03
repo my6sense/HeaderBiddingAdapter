@@ -1,14 +1,9 @@
 const {registerBidder} = require('../src/adapters/bidderFactory');
-
 const BIDDER_CODE = 'my6sense';
-// const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
-const END_POINT = 'http://127.0.0.1:8080/pub2/web/hbwidget.json';
+const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
+// const END_POINT = 'http://127.0.0.1:8080/pub2/web/hbwidget.json';
+// const END_POINT = 'http://54.237.134.160:8080/pub2/web/hbwidget.json';
 const END_POINT_METHOD = 'POST';
-
-var GDPR = {
-  consent: '',
-  applies: ''
-};
 
 // called first
 function isBidRequestValid(bid) {
@@ -104,6 +99,24 @@ function fixRequestParamForServer(key, value) {
 
 // called second
 
+function buildGdprServerProperty(bidderRequest) {
+  var gdprObj = {
+    gdpr_consent: null,
+    gdpr: null
+  };
+
+  if (bidderRequest && 'gdprConsent' in bidderRequest) {
+    gdprObj.gdpr_consent = bidderRequest.gdprConsent.consentString || null;
+
+    gdprObj.gdpr = gdprObj.gdpr === null && bidderRequest.gdprConsent.gdprApplies == true ? true : gdprObj.gdpr;
+    gdprObj.gdpr = gdprObj.gdpr === null && bidderRequest.gdprConsent.gdprApplies == false ? false : gdprObj.gdpr;
+    gdprObj.gdpr = gdprObj.gdpr === null && bidderRequest.gdprConsent.gdprApplies == 1 ? true : gdprObj.gdpr;
+    gdprObj.gdpr = gdprObj.gdpr === null && bidderRequest.gdprConsent.gdprApplies == 0 ? false : gdprObj.gdpr;
+  }
+
+  return gdprObj;
+}
+
 function buildRequests(validBidRequests, bidderRequest) {
   let requests = [];
 
@@ -140,17 +153,12 @@ function buildRequests(validBidRequests, bidderRequest) {
         }
       }
 
-      if(bidderRequest.gdprConsent) {
-
-      }
-
       let url = `${END_POINT}?widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`; // mandatory query string for server side
       if (debug) {
         url = `${END_POINT}?env=debug&widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`; // this url is for debugging
       }
 
-      // GDPR params
-      url += '&gdpr=' + GDPR.applies + '&gdpr_consent=' + GDPR.consent;
+      bidRequest.gdpr = buildGdprServerProperty(bidderRequest);
 
       requests.push({
         url: url,
@@ -181,7 +189,7 @@ const spec = {
   code: BIDDER_CODE,
   isBidRequestValid,
   buildRequests,
-  interpretResponse,
+  interpretResponse
 };
 
 registerBidder(spec);
