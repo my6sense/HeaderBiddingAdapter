@@ -1,9 +1,14 @@
 const {registerBidder} = require('../src/adapters/bidderFactory');
 
 const BIDDER_CODE = 'my6sense';
-const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
-// const END_POINT = 'http://127.0.0.1:8080/pub2/web/hbwidget.json';
+// const END_POINT = 'http://papi.mynativeplatform.com/pub2/web/hbwidget.json';
+const END_POINT = 'http://127.0.0.1:8080/pub2/web/hbwidget.json';
 const END_POINT_METHOD = 'POST';
+
+var GDPR = {
+  consent: '',
+  applies: ''
+};
 
 // called first
 function isBidRequestValid(bid) {
@@ -99,7 +104,7 @@ function fixRequestParamForServer(key, value) {
 
 // called second
 
-function buildRequests(validBidRequests) {
+function buildRequests(validBidRequests, bidderRequest) {
   let requests = [];
 
   if (validBidRequests && validBidRequests.length) {
@@ -135,10 +140,17 @@ function buildRequests(validBidRequests) {
         }
       }
 
+      if(bidderRequest.gdprConsent) {
+
+      }
+
       let url = `${END_POINT}?widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`; // mandatory query string for server side
       if (debug) {
         url = `${END_POINT}?env=debug&widget_key=${bidRequest.params.key}&is_data_url_set=${isDataUrlSetByUser}`; // this url is for debugging
       }
+
+      // GDPR params
+      url += '&gdpr=' + GDPR.applies + '&gdpr_consent=' + GDPR.consent;
 
       requests.push({
         url: url,
