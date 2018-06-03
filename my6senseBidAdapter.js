@@ -5,7 +5,7 @@ const BIDDER_CODE = 'my6sense';
 const END_POINT = 'http://127.0.0.1:8080/pub2/web/hbwidget.json';
 const END_POINT_METHOD = 'POST';
 
-// called firstssss
+// called first
 function isBidRequestValid(bid) {
   return !(bid.bidder !== BIDDER_CODE || !bid.params || !bid.params.key);
 }
